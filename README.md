@@ -34,4 +34,4 @@ I didn't want to fork CPython and change all the grammar to try this out, so I c
 The late-bound expression must be surrounded by parentheses, unlike the syntax proposed in the PEP. This may be fixed in the future.
 
 ## Acknowledgements
-Thank you to [@asottile](https://github.com/asottile) and his future packages (e.g. [future-fstrings](https://github.com/asottile-archive/future-fstrings)) for providing an outline for how to do modify code like this.
+Thank you to [@asottile](https://github.com/asottile) and his future packages (e.g. [future-fstrings](https://github.com/asottile-archive/future-fstrings)) for providing an outline for how to modify code like this.
