@@ -27,7 +27,7 @@ assert example_func(5) == 10
 ```
 
 ## Motivation
-I was annoyed with Python defaults, and resulting searches and discussion let to me being made aware of the above proposal and [PEP 661](https://peps.python.org/pep-0671/).
+I was annoyed with Python defaults, and resulting searches and discussion let to me being made aware of the above proposal (and [PEP 661](https://peps.python.org/pep-0671/), but I'm ignoring that for now).
 I didn't want to fork CPython and change all the grammar to try this out, so I cheated with a custom codecs and tokens/AST transformation.
 
 ## Caveats
