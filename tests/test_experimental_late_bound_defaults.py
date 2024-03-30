@@ -40,6 +40,25 @@ def test_func(z: float, a: int=1, b: list[int]=_defer(lambda z, a: [a] * a), /, 
 """
 
 
+def test_func_with_late_bindings() -> None:
+    def actual_late_binding_implementation_example(
+        a: int,
+        b: float = 1.0,
+        /,
+        ex: str = "hello",
+        *,
+        c: list[object] = late_bind._defer(lambda a, b, ex: ["Preceding args", a, b, ex]),  # noqa: B008
+        d: bool = False,
+        e: int = late_bind._defer(lambda a, b, ex, c, d: len(c)),
+    ) -> tuple[list[object], int]:
+        late_bind._evaluate_late_binding(locals())
+        return c, e
+
+    c, e = actual_late_binding_implementation_example(10)
+    assert c == ["Preceding args", 10, 1.0, "hello"]
+    assert e == 4
+
+
 def test_modify_source() -> None:
     retokenized_source = late_bind._modify_source(ORIGINAL_FUNC)
     assert retokenized_source == POST_RETOKENIZE_FUNC
@@ -72,25 +91,6 @@ def test_modify_ast_with_docstring_and_future_import() -> None:
 
     transformed_source = ast.unparse(late_bind._modify_ast(ast.parse(original_source)))
     assert transformed_source == expected_result
-
-
-def test_func_with_late_bindings() -> None:
-    def actual_late_binding_implementation_example(
-        a: int,
-        b: float = 1.0,
-        /,
-        ex: str = "hello",
-        *,
-        c: list[object] = late_bind._defer(lambda a, b, ex: ["Preceding args", a, b, ex]),  # noqa: B008
-        d: bool = False,
-        e: int = late_bind._defer(lambda a, b, ex, c, d: len(c)),
-    ) -> tuple[list[object], int]:
-        late_bind._evaluate_late_binding(locals())
-        return c, e
-
-    c, e = actual_late_binding_implementation_example(10)
-    assert c == ["Preceding args", 10, 1.0, "hello"]
-    assert e == 4
 
 
 def test_decode():

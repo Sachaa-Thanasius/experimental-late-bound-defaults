@@ -1,4 +1,6 @@
-"""On second thought, maybe doing a pure importlib version isn't the best for per-file usage."""
+"""On second thought, maybe doing a pure importlib version isn't the best for per-file usage. Leaving this here in case
+I come back to it.
+"""
 
 from __future__ import annotations
 
@@ -30,11 +32,7 @@ def _call_with_frames_removed(func: Callable[P, T], *args: P.args, **kwargs: P.k
 
 
 class LateBoundDefaultImporter(importlib.machinery.FileFinder, importlib.machinery.SourceFileLoader):
-    def find_spec(
-        self,
-        fullname: str,
-        target: types.ModuleType | None = None,
-    ) -> importlib.machinery.ModuleSpec | None:
+    def find_spec(self, fullname: str, target: types.ModuleType | None = None) -> importlib.machinery.ModuleSpec | None:
         spec = super().find_spec(fullname, target)
         if spec is None:
             return None
@@ -66,9 +64,11 @@ class LateBoundDefaultImporter(importlib.machinery.FileFinder, importlib.machine
 
 
 def install() -> None:
+    # Attempts to recreate exactly how FileFinder.path_hook is registered. Probably not necessary.
+
     def _get_supported_file_loaders():  # noqa: ANN202 # Better inference by pyright without annotation.
         extensions = importlib.machinery.ExtensionFileLoader, importlib.machinery.EXTENSION_SUFFIXES
-        source = importlib.machinery.SourceFileLoader, importlib.machinery.SOURCE_SUFFIXES
+        source = LateBoundDefaultImporter, importlib.machinery.SOURCE_SUFFIXES
         bytecode = importlib.machinery.SourcelessFileLoader, importlib.machinery.BYTECODE_SUFFIXES
         return [extensions, source, bytecode]
 

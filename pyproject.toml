@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "experimental_late_bound_defaults"
 description = "A way to test PEP 671 in python."
 requires-python = ">=3.10"
-version = "2024.03.29"
+version = "2024.03.30"
 readme = "README.md"
 license = { file = "LICENSE" }
 authors = [
@@ -82,7 +82,7 @@ ignore = [
     "Q003",
     "COM812",
     "COM819",
-    # "E501",
+    "E501",
     "ISC001",
     "ISC002",
 ]
@@ -92,8 +92,9 @@ unfixable = [
 
 [tool.ruff.lint.extend-per-file-ignores]
 "tests/*.*" = [
-    "T201", # Printing is fine.
-    "ANN",  # Don't need many type annotations.
+    "T201",   # Printing is fine.
+    "ANN",    # Don't need many type annotations.
+    "PTH110",
 ]
 
 [tool.ruff.lint.isort]
