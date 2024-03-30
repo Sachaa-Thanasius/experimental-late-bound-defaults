@@ -1,5 +1,5 @@
 # experimental-late-bound-defaults
-A way to test [PEP 671](https://peps.python.org/pep-0671/) in python.
+A way to mess with [PEP 671](https://peps.python.org/pep-0671/) syntax in python without needing a CPython fork.
 
 ## Installation
 ```shell
