@@ -14,6 +14,9 @@ authors = [
 ]
 classifiers = ["Development Status :: 1 - Planning"]
 
+[project.optional-dependencies]
+dev = ["pytest"]
+
 [tool.setuptools]
 packages = ["experimental_late_bound_defaults"]
 
@@ -67,9 +70,11 @@ ignore = [
     "ANN204", # Special method return types are usually implicit or known by type checker.
     "ANN401", # Need Any for some cases.
     "PLR",    # Complexity things.
-    # Some builtin names are shadowed.
-    "A001",
-    "A002",
+    "A002",   # A little built-in shadowing.
+    "ERA001", # Ignore commented code for now.
+    # Allow messages in exception class calls.
+    "TRY003",
+    "EM101",
     # Recommended by Ruff when using Ruff format.
     "E111",
     "E114",

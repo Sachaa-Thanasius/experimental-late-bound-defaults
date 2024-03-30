@@ -36,12 +36,7 @@ class install(_install):
                 os.path.join(self.install_lib, self.extra_path[0]),  # noqa: PTH118
             )
         else:
-            raise RuntimeError(  # noqa: TRY003
-                "unexpected install_suffix",  # noqa: EM101
-                self.install_lib,
-                self.install_libbase,
-                install_suffix,
-            )
+            raise RuntimeError("unexpected install_suffix", self.install_lib, self.install_libbase, install_suffix)
 
 
 setup(cmdclass={"install": install})

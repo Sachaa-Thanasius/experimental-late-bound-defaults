@@ -251,9 +251,9 @@ def decode(input: bytes, errors: str = "strict") -> tuple[str, int]:
 
 
 def searcher(name: str) -> codecs.CodecInfo | None:
-    if name in {"experimental_late_bound_defaults", "experimental-late-bound-defaults"}:
+    if name == "experimental-late-bound-defaults":
         return codecs.CodecInfo(
-            name="experimental-late-bound-defaults",
+            name=name,
             encode=utf_8.encode,
             decode=decode,
             incrementalencoder=utf_8.IncrementalEncoder,

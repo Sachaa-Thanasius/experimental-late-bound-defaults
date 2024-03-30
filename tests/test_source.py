@@ -31,16 +31,16 @@ def test_func(
 """
 
 POST_AST_TRANSFORM_FUNC = """\
-from pep_671 import defer, _evaluate_late_binding
+from experimental_late_bound_defaults import _defer, _evaluate_late_binding
 
 def test_func(
     z: float,
     a: int = 1,
-    b: list[int] = defer(lambda z, a: [a] * a),
+    b: list[int] = _defer(lambda z, a: [a] * a),
     /,
-    c: dict[str, int] = defer(lambda z, a, b: {str(a): b}),
+    c: dict[str, int] = _defer(lambda z, a, b: {str(a): b}),
     *,
-    d: str = defer(lambda z, a, b, c: str(a) + str(c)),
+    d: str = _defer(lambda z, a, b, c: str(a) + str(c)),
 ) -> str:
     _evaluate_late_binding(locals())
     result = [*b, a]
@@ -58,4 +58,6 @@ def test_modify_ast() -> None:
 
     transformed_dump = ast.dump(transformed_tree)
     expected_dump = ast.dump(ast.parse(POST_AST_TRANSFORM_FUNC))
+
+
     assert transformed_dump == expected_dump
