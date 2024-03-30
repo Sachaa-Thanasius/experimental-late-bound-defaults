@@ -153,6 +153,7 @@ class LateBoundDefaultTransformer(ast.NodeTransformer):
         return ast.Call(func=ast.Name(id="_defer", ctx=ast.Load()), args=[new_lambda], keywords=[])
 
     def _replace_late_bound_markers(self, node: ast.FunctionDef | ast.AsyncFunctionDef) -> None:
+        # Replace the markers in the function defaults with actual defer objects.
         all_func_defaults = node.args.defaults + node.args.kw_defaults
         try:
             next(default for default in all_func_defaults if default is not None and self._is_marker_node(default))
@@ -185,6 +186,7 @@ class LateBoundDefaultTransformer(ast.NodeTransformer):
             node.args.kw_defaults[index] = self._replace_marker_node(marker, actual_index, all_args)
 
     def _add_late_binding_evaluate_call(self, node: ast.FunctionDef | ast.AsyncFunctionDef) -> None:
+        # Put a call to evaluate the defer objects, the late bindings, as the first line of the function.
         evaluate_expr = ast.Expr(
             value=ast.Call(
                 func=ast.Name(id="_evaluate_late_binding", ctx=ast.Load()),
@@ -200,37 +202,33 @@ class LateBoundDefaultTransformer(ast.NodeTransformer):
                 node.body.insert(0, evaluate_expr)
 
     def visit_FunctionDef(self, node: ast.FunctionDef) -> ast.FunctionDef:
-        # Replace the markers in the function defaults with actual defer objects.
         self._replace_late_bound_markers(node)
-
-        # Put a call to evaluate the defer objects, the late bindings, as the first line of the function.
         self._add_late_binding_evaluate_call(node)
-
         return self.generic_visit(node)  # type: ignore
 
     def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> ast.AsyncFunctionDef:
-        # Replace the markers in the function defaults with actual defer objects.
         self._replace_late_bound_markers(node)
-
-        # Put a call to evaluate the defer objects, the late bindings, as the first line of the function.
         self._add_late_binding_evaluate_call(node)
-
         return self.generic_visit(node)  # type: ignore
 
     def visit_Module(self, node: ast.Module) -> ast.Module:
         """Import the defer type and evaluation functions so that the late binding-related symbols are valid."""
 
-        import_stmt = ast.ImportFrom(
-            module="experimental_late_bound_defaults",
-            names=[ast.alias(name="_defer"), ast.alias(name="_evaluate_late_binding")],
-            level=0,
-        )
+        expect_docstring = True
+        position = 0
+        for sub_node in node.body:
+            match sub_node:
+                case ast.Expr(value=ast.Constant(value=str())) if expect_docstring:
+                    expect_docstring = False
+                case ast.ImportFrom(module="__future__", level=0):
+                    pass
+                case _:
+                    break
+            position += 1
 
-        match node.body:
-            case [ast.Expr(value=ast.Constant(value=str())), *_]:
-                node.body.insert(1, import_stmt)
-            case _:
-                node.body.insert(0, import_stmt)
+        aliases = [ast.alias("_defer"), ast.alias("_evaluate_late_binding")]
+        imports = ast.ImportFrom(module="experimental_late_bound_defaults", names=aliases, level=0)
+        node.body.insert(position, imports)
 
         return self.generic_visit(node)  # type: ignore
 
@@ -244,10 +242,10 @@ def _modify_ast(tree: ast.AST) -> ast.Module:
 
 def decode(input: bytes, errors: str = "strict") -> tuple[str, int]:
     source, read = utf_8.decode(input, errors=errors)
-    source = _modify_source(source)
-    tree = _modify_ast(ast.parse(source))
-    source = ast.unparse(tree)
-    return source, read
+    modified_source = _modify_source(source)
+    transformed_tree = _modify_ast(ast.parse(modified_source))
+    final_source = ast.unparse(transformed_tree)
+    return final_source, read
 
 
 def searcher(name: str) -> codecs.CodecInfo | None:

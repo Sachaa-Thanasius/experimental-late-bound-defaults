@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "experimental_late_bound_defaults"
 description = "A way to test PEP 671 in python."
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 version = "2024.03.29"
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -15,7 +15,7 @@ authors = [
 classifiers = ["Development Status :: 1 - Planning"]
 
 [project.optional-dependencies]
-dev = ["pytest"]
+dev = ["tox"]
 
 [tool.setuptools]
 packages = ["experimental_late_bound_defaults"]
@@ -23,7 +23,7 @@ packages = ["experimental_late_bound_defaults"]
 [tool.ruff]
 include = ["experimental_late_bound_defaults/*"]
 line-length = 120
-target-version = "py311"
+target-version = "py310"
 
 [tool.ruff.lint]
 select = [
@@ -105,7 +105,7 @@ keep-runtime-typing = true
 [tool.pyright]
 include = ["experimental_late_bound_defaults"]
 ignore = ["tests"]
-pythonVersion = "3.11"
+pythonVersion = "3.10"
 typeCheckingMode = "strict"
 
 reportPrivateUsage = "none"
