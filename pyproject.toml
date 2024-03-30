@@ -99,8 +99,7 @@ keep-runtime-typing = true
 
 [tool.pyright]
 include = ["experimental_late_bound_defaults"]
-# ignore = ["tests"]
-defineConstant = { DEBUG = true }
+ignore = ["tests"]
 pythonVersion = "3.11"
 typeCheckingMode = "strict"
 

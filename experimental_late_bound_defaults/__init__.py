@@ -3,27 +3,22 @@
 from __future__ import annotations
 
 import ast
+import codecs
 import ctypes
-import importlib.machinery
-import importlib.util
 import sys
 import tokenize
 from collections import deque
+from collections.abc import Callable, Generator, Iterable
+from encodings import utf_8
 from io import StringIO
 from itertools import takewhile
-from typing import TYPE_CHECKING, Generic, ParamSpec, TypeAlias, TypeGuard, TypeVar
-
-if TYPE_CHECKING:
-    import os
-    import types
-    from collections.abc import Callable, Generator, Iterable
-
-    from typing_extensions import Buffer as ReadableBuffer
-
-    StrPath: TypeAlias = str | os.PathLike[str]
+from typing import Generic, ParamSpec, TypeGuard, TypeVar
 
 T = TypeVar("T")
 P = ParamSpec("P")
+
+
+# === The parts that will actually do the work of implementing late binding argument defaults.
 
 
 class _defer(Generic[P, T]):
@@ -52,6 +47,9 @@ def _evaluate_late_binding(orig_locals: dict[str, object]) -> None:
         ctypes.pythonapi.PyFrame_LocalsToFast(ctypes.py_object(frame), ctypes.c_int(0))
     finally:
         del frame
+
+
+# === Token modification.
 
 
 class Peekable(Generic[T]):
@@ -125,6 +123,9 @@ def _modify_source(src: str) -> str:
 
     tokens_gen = _modify_tokens(tokenize.generate_tokens(StringIO(src).readline))
     return tokenize.untokenize(tokens_gen)
+
+
+# === AST modification.
 
 
 class LateBoundDefaultTransformer(ast.NodeTransformer):
@@ -238,56 +239,34 @@ def _modify_ast(tree: ast.AST) -> ast.Module:
     return ast.fix_missing_locations(LateBoundDefaultTransformer().visit(tree))
 
 
-def _call_with_frames_removed(func: Callable[P, T], *args: P.args, **kwargs: P.kwargs) -> T:
-    """Calls a function while removing itself from tracebacks, should any be generated."""
-
-    return func(*args, **kwargs)
+# === Codec registration.
 
 
-class LateBoundDefaultImporter(importlib.machinery.FileFinder, importlib.machinery.SourceFileLoader):
-    def find_spec(
-        self,
-        fullname: str,
-        target: types.ModuleType | None = None,
-    ) -> importlib.machinery.ModuleSpec | None:
-        spec = super().find_spec(fullname, target)
-        if spec is None:
-            return None
-        loader = spec.loader
-        if loader:
-            loader.__class__ = type(self)
-        return spec
+def decode(input: bytes, errors: str = "strict") -> tuple[str, int]:
+    source, read = utf_8.decode(input, errors=errors)
+    source = _modify_source(source)
+    tree = _modify_ast(ast.parse(source))
+    source = ast.unparse(tree)
+    return source, read
 
-    def source_to_code(  # type: ignore
-        self,
-        data: ReadableBuffer,
-        path: ReadableBuffer | StrPath = "<string>",
-        *,
-        _optimize: int = -1,
-    ) -> types.CodeType:
-        source = importlib.util.decode_source(data)
-        source = _modify_source(source)
-        tree = _call_with_frames_removed(
-            compile,
-            source,
-            path,
-            "exec",
-            dont_inherit=True,
-            optimize=_optimize,
-            flags=ast.PyCF_ONLY_AST,
+
+def searcher(name: str) -> codecs.CodecInfo | None:
+    if name in {"experimental_late_bound_defaults", "experimental-late-bound-defaults"}:
+        return codecs.CodecInfo(
+            name="experimental-late-bound-defaults",
+            encode=utf_8.encode,
+            decode=decode,
+            incrementalencoder=utf_8.IncrementalEncoder,
+            incrementaldecoder=utf_8.IncrementalDecoder,
+            streamreader=utf_8.StreamReader,
+            streamwriter=utf_8.StreamWriter,
         )
-        tree = _modify_ast(tree)
-        return _call_with_frames_removed(compile, tree, path, "exec", dont_inherit=True, optimize=_optimize, flags=0)
+    return None
 
 
-def install() -> None:
-    def _get_supported_file_loaders():  # noqa: ANN202 # Better inference by pyright without annotation.
-        extensions = importlib.machinery.ExtensionFileLoader, importlib.machinery.EXTENSION_SUFFIXES
-        source = importlib.machinery.SourceFileLoader, importlib.machinery.SOURCE_SUFFIXES
-        bytecode = importlib.machinery.SourcelessFileLoader, importlib.machinery.BYTECODE_SUFFIXES
-        return [extensions, source, bytecode]
+def register() -> None:
+    codecs.register(searcher)
 
-    for i, hook in enumerate(sys.path_hooks):
-        if "FileFinder.path_hook" in repr(hook):
-            sys.path_hooks[i] = LateBoundDefaultImporter.path_hook(*_get_supported_file_loaders())
-            break
+
+def unregister() -> None:
+    codecs.unregister(searcher)
